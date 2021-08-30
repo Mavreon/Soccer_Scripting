@@ -5,12 +5,17 @@ using UnityEngine;
 public class PlayerControllerX : MonoBehaviour
 {
     private Rigidbody playerRb;
-    private float speed = 500;
+    public float speed = 500;
+    public float defaultSpeed = 500; //Player default speed...
+    private float turboSpeed = 1500; //Turbo speed when turbo boost has been activated...
+    private bool inTurbo = false; //True if player is in Turbo mode and vice versa...
+    public ParticleSystem smokeParticle; //Smoke particle visible when player in turbo mode...
     private GameObject focalPoint;
 
     public bool hasPowerup;
     public GameObject powerupIndicator;
     public int powerUpDuration = 5;
+    public int turboBoostDuration = 5;
 
     private float normalStrength = 10; // how hard to hit enemy without powerup
     private float powerupStrength = 25; // how hard to hit enemy with powerup
@@ -30,6 +35,9 @@ public class PlayerControllerX : MonoBehaviour
         // Set powerup indicator position to beneath player
         powerupIndicator.transform.position = transform.position + new Vector3(0, -0.6f, 0);
 
+        //Call TurboBoost()...
+        TurboBoost();
+        smokeParticle.transform.position = transform.position;
     }
 
     // If Player collides with powerup, activate powerup
@@ -40,6 +48,7 @@ public class PlayerControllerX : MonoBehaviour
             Destroy(other.gameObject);
             hasPowerup = true;
             powerupIndicator.SetActive(true);
+            StartCoroutine(PowerupCooldown());
         }
     }
 
@@ -57,7 +66,7 @@ public class PlayerControllerX : MonoBehaviour
         if (other.gameObject.CompareTag("Enemy"))
         {
             Rigidbody enemyRigidbody = other.gameObject.GetComponent<Rigidbody>();
-            Vector3 awayFromPlayer =  transform.position - other.gameObject.transform.position; 
+            Vector3 awayFromPlayer = other.gameObject.transform.position - transform.position; 
            
             if (hasPowerup) // if have powerup hit enemy with powerup force
             {
@@ -67,11 +76,28 @@ public class PlayerControllerX : MonoBehaviour
             {
                 enemyRigidbody.AddForce(awayFromPlayer * normalStrength, ForceMode.Impulse);
             }
-
-
         }
     }
 
 
-
+    // Function to handle turbo boost mechanics of player...
+    private void TurboBoost()
+    {
+        if(!inTurbo)
+        {
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
+                speed = turboSpeed;
+                smokeParticle.Play();
+                StartCoroutine(TurboBoostCooldown());
+            }
+        }
+    }
+    // Coroutine to count down turbo boost duration...
+    IEnumerator TurboBoostCooldown()
+    {
+        yield return new WaitForSeconds(turboBoostDuration);
+        speed = defaultSpeed;
+        smokeParticle.Stop();
+    }
 }
